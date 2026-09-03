@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
 import { saveEntryAction } from "@/lib/actions/entries";
 import type { FormState } from "@/lib/actions/auth";
@@ -53,7 +53,6 @@ export function PunchEditor({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const params = useSearchParams();
   const [vals, setVals] = useState<Vals>({ ...EMPTY, ...initial });
   const [obs, setObs] = useState(initialObs);
   const [state, formAction] = useFormState<FormState, FormData>(saveEntryAction, {});
@@ -63,9 +62,7 @@ export function PunchEditor({
   const clsFor = (v: number | null) => (v == null ? "" : v > 0 ? "val-pos" : v < 0 ? "val-neg" : "val-zero");
 
   const changeDate = (d: string) => {
-    const q = new URLSearchParams(params.toString());
-    q.set("date", d);
-    router.push(`${pathname}?${q.toString()}`);
+    router.push(`${pathname}?date=${d}`);
   };
 
   return (
