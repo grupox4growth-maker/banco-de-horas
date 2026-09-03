@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Nomes criados automaticamente pela integração Vercel Postgres (Neon):
+  //  - POSTGRES_PRISMA_URL  -> conexão com pooler, ajustada para o Prisma
+  //  - DATABASE_URL_UNPOOLED -> conexão direta (usada em migrações/db push)
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+enum Role {
+  MANAGER
+  EMPLOYEE
+}
+
+model User {
+  id           String  @id @default(cuid())
+  name         String
+  username     String  @unique // sempre em minúsculas
+  email        String? @unique
+  role         Role    @default(EMPLOYEE)
+  passwordHash String
+  active       Boolean @default(true)
+  cargo        String?
+
+  // Jornada padrão (apenas para funcionários)
+  entrada            String? // "08:00"
+  saidaAlmoco        String?
+  voltaAlmoco        String?
+  saida              String?
+  cargaMin           Int     @default(480)
+  descontarIntervalo Boolean @default(false)
+  dias               Int[]   @default([1, 2, 3, 4, 5]) // dias da semana (0=Dom ... 6=Sáb)
+
+  createdAt DateTime @default(now())
+
+  entries      TimeEntry[]
+  productivity Productivity[]
+  notes        Note[]
+  resetTokens  PasswordResetToken[]
+}
+
+model TimeEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        String // "YYYY-MM-DD"
+  entrada     String?
+  saidaAlmoco String?
+  voltaAlmoco String?
+  intInicio   String?
+  intFim      String?
+  saida       String?
+  obs         String?
+  updatedBy   Role?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model Productivity {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String
+  pontos    Int
+  nota      String?
+  autor     String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String
+  tipo      String // 'obs' | 'aviso'
+  texto     String
+  autor     String?
+  lida      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique // sha-256 do token; o token puro só vai no e-mail
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
