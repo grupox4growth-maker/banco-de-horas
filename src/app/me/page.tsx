@@ -16,8 +16,8 @@ export default async function MePage({ searchParams }: { searchParams: { date?: 
   const employee = await prisma.user.findUnique({
     where: { id: session.userId },
     include: {
-      entries: { orderBy: { data: "desc" } },
-      productivity: { orderBy: { data: "desc" } },
+      entries: { orderBy: { date: "desc" } },
+      productivity: { orderBy: { date: "desc" } },
       notes: { orderBy: { createdAt: "desc" } },
     },
   });
