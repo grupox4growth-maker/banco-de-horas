@@ -3,7 +3,50 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { nowInPunchTZ } from "@/lib/time";
 import type { FormState } from "@/lib/actions/auth";
+
+const PUNCH_SEGS = ["entrada", "saidaAlmoco", "voltaAlmoco", "intInicio", "intFim", "saida"];
+
+/* ---- BATER PONTO AGORA (horário do servidor, 1 toque, não editável pelo funcionário) ---- */
+export async function punchNowAction(f: FormData): Promise<void> {
+  const session = await getSession();
+  if (!session) return;
+  const segment = String(f.get("segment") || "");
+  if (!PUNCH_SEGS.includes(segment)) return;
+
+  const userId = session.userId; // o funcionário só bate o próprio ponto
+  const { date, time } = nowInPunchTZ();
+
+  const existing = await prisma.timeEntry.findUnique({ where: { userId_date: { userId, date } } });
+  // Não sobrescreve um ponto já registrado (evita "refazer" a hora).
+  if (existing && (existing as Record<string, unknown>)[segment]) return;
+
+  const data: Record<string, unknown> = { [segment]: time, updatedBy: session.role };
+  await prisma.timeEntry.upsert({
+    where: { userId_date: { userId, date } },
+    create: { userId, date, ...data },
+    update: data,
+  });
+  revalidatePath("/me");
+  revalidatePath(`/employees/${userId}`);
+  revalidatePath("/dashboard");
+}
+
+/* ---- Observação do dia (o funcionário pode escrever; é texto, não horário) ---- */
+export async function saveObservationAction(f: FormData): Promise<void> {
+  const session = await getSession();
+  if (!session) return;
+  const obs = String(f.get("obs") || "").trim() || null;
+  const userId = session.userId;
+  const { date } = nowInPunchTZ();
+  await prisma.timeEntry.upsert({
+    where: { userId_date: { userId, date } },
+    create: { userId, date, obs, updatedBy: session.role },
+    update: { obs, updatedBy: session.role },
+  });
+  revalidatePath("/me");
+}
 
 const norm = (v: FormDataEntryValue | null) => {
   const s = String(v ?? "").trim();
@@ -18,8 +61,9 @@ export async function saveEntryAction(_prev: FormState, f: FormData): Promise<Fo
   const date = String(f.get("date") || "");
   if (!userId || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Dados inválidos." };
 
-  // Funcionário só pode registrar o próprio ponto.
-  if (session.role !== "MANAGER" && session.userId !== userId) {
+  // Digitar/editar horários é exclusivo do gerente (correções).
+  // O funcionário registra pelo botão "Registrar agora" (horário do servidor, não editável).
+  if (session.role !== "MANAGER") {
     return { error: "Não autorizado." };
   }
 

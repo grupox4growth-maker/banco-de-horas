@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { PunchEditor } from "@/components/PunchEditor";
+import { PunchClock } from "@/components/PunchClock";
 import { ActionForm } from "@/components/ActionForm";
 import { HistoryTable, ProdList, NotesList } from "@/components/ui";
 import { addProductivityAction } from "@/lib/actions/productivity";
 import { addNoteAction } from "@/lib/actions/notes";
 import { changeOwnPasswordAction } from "@/lib/actions/auth";
-import { bancoTotalMin, scheduleOf, fmtDur, initials, todayISO } from "@/lib/time";
+import { bancoTotalMin, scheduleOf, fmtDur, initials, todayISO, nowInPunchTZ } from "@/lib/time";
 
 type Entry = {
   date: string;
@@ -87,20 +88,28 @@ export function EmployeePanel({
       )}
 
       {/* Registro de ponto */}
-      <PunchEditor
-        userId={employee.id}
-        date={date}
-        schedule={sched}
-        initial={{
-          entrada: entry?.entrada || "",
-          saidaAlmoco: entry?.saidaAlmoco || "",
-          voltaAlmoco: entry?.voltaAlmoco || "",
-          intInicio: entry?.intInicio || "",
-          intFim: entry?.intFim || "",
-          saida: entry?.saida || "",
-        }}
-        initialObs={entry?.obs || ""}
-      />
+      {canManage ? (
+        <PunchEditor
+          userId={employee.id}
+          date={date}
+          schedule={sched}
+          initial={{
+            entrada: entry?.entrada || "",
+            saidaAlmoco: entry?.saidaAlmoco || "",
+            voltaAlmoco: entry?.voltaAlmoco || "",
+            intInicio: entry?.intInicio || "",
+            intFim: entry?.intFim || "",
+            saida: entry?.saida || "",
+          }}
+          initialObs={entry?.obs || ""}
+        />
+      ) : (
+        (() => {
+          const todayBR = nowInPunchTZ().date;
+          const todayEntry = employee.entries.find((e) => e.date === todayBR) || null;
+          return <PunchClock entry={todayEntry} date={todayBR} schedule={sched} />;
+        })()
+      )}
 
       {/* Histórico */}
       <div className="card">

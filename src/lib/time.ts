@@ -136,6 +136,26 @@ export function nowHM(): string {
   return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 }
 
+// Fuso oficial usado para bater ponto (hora do servidor, não do dispositivo do funcionário).
+export const PUNCH_TZ = "America/Sao_Paulo";
+
+/** Data (YYYY-MM-DD) e hora (HH:MM) atuais no fuso do Brasil — calculadas no servidor. */
+export function nowInPunchTZ(): { date: string; time: string } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: PUNCH_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const g = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  let hh = g("hour");
+  if (hh === "24") hh = "00";
+  return { date: `${g("year")}-${g("month")}-${g("day")}`, time: `${hh}:${g("minute")}` };
+}
+
 export function initials(name: string): string {
   return String(name || "?")
     .trim()
