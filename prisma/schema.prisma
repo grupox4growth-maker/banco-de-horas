@@ -16,13 +16,21 @@ enum Role {
   EMPLOYEE
 }
 
+// Configuração única do sistema (id sempre = "app").
+model Setting {
+  id               String   @id @default("app")
+  registrationCode String // código do link de convite para autocadastro
+  companyName      String   @default("Ponto & Banco de Horas")
+  updatedAt        DateTime @updatedAt
+}
+
 model User {
   id           String  @id @default(cuid())
   name         String
   username     String  @unique // sempre em minúsculas
   email        String? @unique
   role         Role    @default(EMPLOYEE)
-  passwordHash String
+  passwordHash String  @default("")
   active       Boolean @default(true)
   cargo        String?
 

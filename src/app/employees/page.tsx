@@ -1,39 +1,40 @@
 import Link from "next/link";
 import { requireManager } from "@/lib/guards";
 import { prisma } from "@/lib/prisma";
+import { getSettings } from "@/lib/settings";
+import { registerLink } from "@/lib/url";
 import { Header } from "@/components/Header";
 import { SaldoPill } from "@/components/ui";
+import { InviteLinkCard } from "@/components/InviteLinkCard";
 import { bancoTotalMin, scheduleOf, fmtDur, initials } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
 export default async function EmployeesPage() {
   const session = await requireManager();
-  const employees = await prisma.user.findMany({
-    where: { role: "EMPLOYEE" },
-    include: { entries: true },
-    orderBy: { name: "asc" },
-  });
+  const [employees, setting] = await Promise.all([
+    prisma.user.findMany({
+      where: { role: "EMPLOYEE" },
+      include: { entries: true },
+      orderBy: { name: "asc" },
+    }),
+    getSettings(),
+  ]);
+  const link = registerLink(setting.registrationCode);
 
   return (
     <>
       <Header session={session} active="employees" />
       <main className="wrap grid" style={{ gap: 16 }}>
-        <div className="row wrapf">
-          <h2 style={{ fontSize: 18 }}>Funcionários</h2>
-          <div className="spacer" />
-          <Link href="/employees/new" className="btn primary">
-            + Novo funcionário
-          </Link>
-        </div>
+        <h2 style={{ fontSize: 18 }}>Funcionários</h2>
+
+        <InviteLinkCard link={link} />
 
         {employees.length === 0 ? (
           <div className="card empty">
-            Nenhum funcionário cadastrado.
-            <div style={{ marginTop: 12 }}>
-              <Link href="/employees/new" className="btn primary">
-                + Novo funcionário
-              </Link>
+            Nenhum funcionário cadastrado ainda.
+            <div className="small" style={{ marginTop: 8 }}>
+              Compartilhe o link de convite acima — quando alguém se cadastrar, aparece aqui.
             </div>
           </div>
         ) : (
@@ -48,10 +49,9 @@ export default async function EmployeesPage() {
                     <div className="row" style={{ gap: 8 }}>
                       <span style={{ fontWeight: 700 }}>{e.name}</span>
                       {!e.active && <span className="tag">inativo</span>}
-                      {!e.email && <span className="tag" style={{ color: "var(--warn)" }}>sem e-mail</span>}
                     </div>
                     <div className="muted small">
-                      {(e.cargo ? e.cargo + " · " : "") + `@${e.username} · jornada ${sched.entrada}–${sched.saida} · ${fmtDur(sched.cargaMin)}/dia`}
+                      {(e.cargo ? e.cargo + " · " : "") + `@${e.username ?? "—"} · jornada ${sched.entrada}–${sched.saida} · ${fmtDur(sched.cargaMin)}/dia`}
                     </div>
                   </div>
                   <SaldoPill min={banco} />

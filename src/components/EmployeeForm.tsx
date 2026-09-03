@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ActionForm } from "@/components/ActionForm";
-import { createEmployeeAction, updateEmployeeAction } from "@/lib/actions/employees";
+import { updateEmployeeAction } from "@/lib/actions/employees";
 import { WD, scheduleOf } from "@/lib/time";
 
 type Emp = {
   id: string;
   name: string;
-  username: string;
+  username: string | null;
   email: string | null;
   cargo: string | null;
   active: boolean;
@@ -19,50 +19,41 @@ type Emp = {
   dias: number[];
 };
 
-export function EmployeeForm({ employee }: { employee?: Emp }) {
-  const editing = !!employee;
-  const s = scheduleOf(employee ?? {});
-  const cancelHref = editing ? `/employees/${employee!.id}` : "/employees";
+export function EmployeeForm({ employee }: { employee: Emp }) {
+  const s = scheduleOf(employee);
 
   return (
     <ActionForm
-      action={editing ? updateEmployeeAction : createEmployeeAction}
-      submitLabel={editing ? "Salvar" : "Cadastrar"}
+      action={updateEmployeeAction}
+      submitLabel="Salvar"
       extra={
-        <Link href={cancelHref} className="btn ghost">
+        <Link href={`/employees/${employee.id}`} className="btn ghost">
           Cancelar
         </Link>
       }
     >
-      {editing && <input type="hidden" name="id" value={employee!.id} />}
+      <input type="hidden" name="id" value={employee.id} />
 
       <div className="cols">
         <div className="field">
           <label htmlFor="name">Nome</label>
-          <input id="name" name="name" defaultValue={employee?.name || ""} placeholder="Nome completo" />
+          <input id="name" name="name" defaultValue={employee.name || ""} placeholder="Nome completo" />
         </div>
         <div className="field">
           <label htmlFor="cargo">Cargo (opcional)</label>
-          <input id="cargo" name="cargo" defaultValue={employee?.cargo || ""} placeholder="ex: Atendente" />
+          <input id="cargo" name="cargo" defaultValue={employee.cargo || ""} placeholder="ex: Atendente" />
         </div>
-      </div>
-
-      <div className="field">
-        <label htmlFor="email">E-mail (para recuperar senha)</label>
-        <input id="email" name="email" type="email" defaultValue={employee?.email || ""} placeholder="funcionario@email.com" />
       </div>
 
       <div className="cols">
         <div className="field">
-          <label htmlFor="username">Usuário (login)</label>
-          <input id="username" name="username" autoCapitalize="none" defaultValue={employee?.username || ""} placeholder="ex: ana" />
+          <label htmlFor="email">E-mail (recuperação de senha)</label>
+          <input id="email" name="email" type="email" defaultValue={employee.email || ""} placeholder="funcionario@email.com" />
         </div>
-        {!editing && (
-          <div className="field">
-            <label htmlFor="password">Senha inicial</label>
-            <input id="password" name="password" type="password" placeholder="mínimo 8 caracteres" />
-          </div>
-        )}
+        <div className="field">
+          <label>Usuário (login)</label>
+          <input value={employee.username ?? "—"} disabled />
+        </div>
       </div>
 
       <div className="field">
@@ -114,12 +105,10 @@ export function EmployeeForm({ employee }: { employee?: Emp }) {
         </div>
       </div>
 
-      {editing && (
-        <label className="checkline">
-          <input type="checkbox" name="active" defaultChecked={employee!.active} />
-          Funcionário ativo
-        </label>
-      )}
+      <label className="checkline">
+        <input type="checkbox" name="active" defaultChecked={employee.active} />
+        Funcionário ativo
+      </label>
     </ActionForm>
   );
 }

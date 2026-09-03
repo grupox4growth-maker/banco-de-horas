@@ -70,8 +70,10 @@ Você **não precisa** ter Node instalado no seu computador — a Vercel compila
 ### 7. Primeiro acesso
 - Abra a URL do app. Como ainda não há gerente, você cai na tela **Configuração inicial**:
   crie a **conta do gerente** (nome, usuário, e-mail e senha). Pronto — você entra no painel.
-- Em **Funcionários → Novo funcionário**, cadastre cada pessoa com **usuário, e-mail e senha inicial**.
-- Cada funcionário entra com o próprio login e bate o próprio ponto; o gerente controla tudo.
+- Em **Funcionários**, copie o **link de convite** e envie para a equipe.
+- Cada funcionário abre o link e faz o **próprio cadastro** (nome, usuário e senha) — e passa a
+  aparecer automaticamente na lista do gerente. O gerente ajusta a **jornada** de cada um em **Editar**.
+- Precisa invalidar o link antigo? Em **Funcionários → Gerar novo link**.
 
 > A tela de configuração inicial só funciona **enquanto não existir nenhum gerente**. Depois disso, ela redireciona para o login.
 

@@ -55,8 +55,8 @@ export default async function DashboardPage() {
             <div className="row wrapf">
               <h2 style={{ fontSize: 16 }}>Situação de cada funcionário</h2>
               <div className="spacer" />
-              <Link href="/employees/new" className="btn primary sm">
-                + Novo funcionário
+              <Link href="/employees" className="btn primary sm">
+                Convidar funcionário
               </Link>
             </div>
           </div>
@@ -64,8 +64,8 @@ export default async function DashboardPage() {
             <div className="empty">
               Nenhum funcionário cadastrado.
               <div style={{ marginTop: 12 }}>
-                <Link href="/employees/new" className="btn primary">
-                  + Novo funcionário
+                <Link href="/employees" className="btn primary">
+                  Convidar funcionário
                 </Link>
               </div>
             </div>

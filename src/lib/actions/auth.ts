@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createHash, randomBytes } from "crypto";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   createSession,
@@ -127,6 +128,43 @@ export async function resetPasswordAction(_prev: FormState, formData: FormData):
     prisma.passwordResetToken.update({ where: { id: rec.id }, data: { usedAt: new Date() } }),
   ]);
   redirect("/login?reset=1");
+}
+
+/* ---------------- AUTOCADASTRO DO FUNCIONÁRIO (pelo link de convite) ------------- */
+export async function selfRegisterAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const code = String(formData.get("code") || "");
+  const name = String(formData.get("name") || "").trim();
+  const username = String(formData.get("username") || "").trim().toLowerCase();
+  const email = String(formData.get("email") || "").trim().toLowerCase() || null;
+  const pw = String(formData.get("password") || "");
+  const pw2 = String(formData.get("password2") || "");
+
+  if (!name) return { error: "Informe seu nome." };
+  if (!username) return { error: "Escolha um usuário (login)." };
+  if (pw.length < 8) return { error: "A senha deve ter pelo menos 8 caracteres." };
+  if (pw !== pw2) return { error: "As senhas não conferem." };
+
+  const setting = await prisma.setting.findUnique({ where: { id: "app" } });
+  if (!setting || !code || code !== setting.registrationCode) {
+    return { error: "Link de convite inválido ou expirado. Peça o link atualizado ao gerente." };
+  }
+
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: { name, username, email, role: "EMPLOYEE", passwordHash: await hashPassword(pw) },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      const field = (e.meta?.target as string[])?.join(", ") || "usuário/e-mail";
+      return { error: `Este ${field} já está em uso. Escolha outro.` };
+    }
+    console.error(e);
+    return { error: "Não foi possível concluir o cadastro. Tente novamente." };
+  }
+
+  await createSession({ userId: user.id, role: user.role, name: user.name });
+  redirect("/me");
 }
 
 /* ---------------- TROCAR A PRÓPRIA SENHA ---------------- */

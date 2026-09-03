@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession, hashPassword } from "@/lib/auth";
+import { regenerateRegistrationCode } from "@/lib/settings";
 import type { FormState } from "@/lib/actions/auth";
 
 async function assertManager() {
@@ -27,67 +28,33 @@ function parseSchedule(f: FormData) {
   };
 }
 
-/* ---------------- CRIAR ---------------- */
-export async function createEmployeeAction(_prev: FormState, f: FormData): Promise<FormState> {
+/* ---------------- GERAR NOVO LINK DE CONVITE (invalida o anterior) ---------------- */
+export async function regenerateRegistrationCodeAction(): Promise<void> {
   await assertManager();
-  const name = String(f.get("name") || "").trim();
-  const username = String(f.get("username") || "").trim().toLowerCase();
-  const email = String(f.get("email") || "").trim().toLowerCase() || null;
-  const cargo = String(f.get("cargo") || "").trim() || null;
-  const password = String(f.get("password") || "");
-
-  if (!name) return { error: "Informe o nome." };
-  if (!username) return { error: "Defina um usuário (login)." };
-  if (password.length < 8) return { error: "A senha inicial deve ter pelo menos 8 caracteres." };
-
-  const sched = parseSchedule(f);
-  try {
-    await prisma.user.create({
-      data: {
-        name,
-        username,
-        email,
-        cargo,
-        role: "EMPLOYEE",
-        passwordHash: await hashPassword(password),
-        ...sched,
-      },
-    });
-  } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-      const field = (e.meta?.target as string[])?.join(", ") || "usuário/e-mail";
-      return { error: `Já existe um cadastro com este ${field}.` };
-    }
-    console.error(e);
-    return { error: "Erro ao cadastrar. Tente novamente." };
-  }
+  await regenerateRegistrationCode();
   revalidatePath("/employees");
-  revalidatePath("/dashboard");
-  redirect("/employees");
 }
 
-/* ---------------- EDITAR ---------------- */
+/* ---------------- EDITAR (gerente ajusta dados/jornada) ---------------- */
 export async function updateEmployeeAction(_prev: FormState, f: FormData): Promise<FormState> {
   await assertManager();
   const id = String(f.get("id") || "");
   const name = String(f.get("name") || "").trim();
-  const username = String(f.get("username") || "").trim().toLowerCase();
   const email = String(f.get("email") || "").trim().toLowerCase() || null;
   const cargo = String(f.get("cargo") || "").trim() || null;
   const active = f.get("active") === "on";
   if (!id) return { error: "Funcionário inválido." };
   if (!name) return { error: "Informe o nome." };
-  if (!username) return { error: "Defina um usuário (login)." };
 
   const sched = parseSchedule(f);
   try {
     await prisma.user.update({
       where: { id },
-      data: { name, username, email, cargo, active, ...sched },
+      data: { name, email, cargo, active, ...sched },
     });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-      const field = (e.meta?.target as string[])?.join(", ") || "usuário/e-mail";
+      const field = (e.meta?.target as string[])?.join(", ") || "e-mail";
       return { error: `Já existe um cadastro com este ${field}.` };
     }
     console.error(e);
@@ -98,7 +65,7 @@ export async function updateEmployeeAction(_prev: FormState, f: FormData): Promi
   redirect(`/employees/${id}`);
 }
 
-/* ---------------- REDEFINIR SENHA (gerente) ---------------- */
+/* ---------------- REDEFINIR SENHA (gerente, plano B) ---------------- */
 export async function resetEmployeePasswordAction(_prev: FormState, f: FormData): Promise<FormState> {
   await assertManager();
   const id = String(f.get("id") || "");
