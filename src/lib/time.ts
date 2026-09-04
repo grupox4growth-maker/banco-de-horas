@@ -17,6 +17,8 @@ export interface Schedule {
   saidaAlmoco: string | null;
   voltaAlmoco: string | null;
   saida: string | null;
+  intInicio: string | null;
+  intFim: string | null;
   cargaMin: number;
   descontarIntervalo: boolean;
   dias: number[];
@@ -172,6 +174,8 @@ export function scheduleOf(u: Partial<Schedule>): Schedule {
     saidaAlmoco: u.saidaAlmoco ?? "12:00",
     voltaAlmoco: u.voltaAlmoco ?? "13:00",
     saida: u.saida ?? "17:00",
+    intInicio: u.intInicio ?? null,
+    intFim: u.intFim ?? null,
     cargaMin: u.cargaMin ?? 480,
     descontarIntervalo: u.descontarIntervalo ?? false,
     dias: u.dias ?? [1, 2, 3, 4, 5],

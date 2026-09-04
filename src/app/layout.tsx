@@ -1,9 +1,23 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { RegisterSW } from "@/components/RegisterSW";
 
 export const metadata: Metadata = {
   title: "Ponto & Banco de Horas",
   description: "Controle de ponto, banco de horas e produtividade dos funcionários.",
+  appleWebApp: {
+    capable: true,
+    title: "Ponto",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#125e57",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +31,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <RegisterSW />
+        {children}
+      </body>
     </html>
   );
 }

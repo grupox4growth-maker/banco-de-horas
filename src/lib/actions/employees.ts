@@ -17,11 +17,17 @@ async function assertManager() {
 function parseSchedule(f: FormData) {
   const dias = f.getAll("dias").map((d) => Number(d)).filter((n) => !isNaN(n));
   const cargaHoras = parseFloat(String(f.get("cargaHoras") || "8"));
+  const opt = (k: string) => {
+    const v = String(f.get(k) || "").trim();
+    return v || null;
+  };
   return {
     entrada: String(f.get("entrada") || "08:00"),
     saidaAlmoco: String(f.get("saidaAlmoco") || "12:00"),
     voltaAlmoco: String(f.get("voltaAlmoco") || "13:00"),
     saida: String(f.get("saida") || "17:00"),
+    intInicio: opt("intInicio"),
+    intFim: opt("intFim"),
     cargaMin: Math.round((isNaN(cargaHoras) ? 8 : cargaHoras) * 60),
     descontarIntervalo: f.get("descontarIntervalo") === "on",
     dias: dias.length ? dias : [1, 2, 3, 4, 5],

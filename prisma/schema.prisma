@@ -39,6 +39,8 @@ model User {
   saidaAlmoco        String?
   voltaAlmoco        String?
   saida              String?
+  intInicio          String? // início do intervalo (opcional) — usado nos alertas
+  intFim             String? // fim do intervalo (opcional)
   cargaMin           Int     @default(480)
   descontarIntervalo Boolean @default(false)
   dias               Int[]   @default([1, 2, 3, 4, 5]) // dias da semana (0=Dom ... 6=Sáb)

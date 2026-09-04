@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PunchEditor } from "@/components/PunchEditor";
 import { PunchClock } from "@/components/PunchClock";
+import { AlertEngine } from "@/components/AlertEngine";
 import { ActionForm } from "@/components/ActionForm";
 import { HistoryTable, ProdList, NotesList } from "@/components/ui";
 import { addProductivityAction } from "@/lib/actions/productivity";
@@ -27,12 +28,14 @@ type Emp = {
   saidaAlmoco: string | null;
   voltaAlmoco: string | null;
   saida: string | null;
+  intInicio: string | null;
+  intFim: string | null;
   cargaMin: number;
   descontarIntervalo: boolean;
   dias: number[];
   entries: Entry[];
-  productivity: { id: string; data: string; pontos: number; nota: string | null }[];
-  notes: { id: string; data: string; tipo: string; texto: string; autor: string | null; lida: boolean }[];
+  productivity: { id: string; date: string; pontos: number; nota: string | null }[];
+  notes: { id: string; date: string; tipo: string; texto: string; autor: string | null; lida: boolean }[];
 };
 
 export function EmployeePanel({
@@ -50,6 +53,8 @@ export function EmployeePanel({
   const entry = employee.entries.find((e) => e.date === date) || null;
   const unread = employee.notes.filter((n) => !n.lida);
   const today = todayISO();
+  const todayBR = nowInPunchTZ().date;
+  const todayEntry = employee.entries.find((e) => e.date === todayBR) || null;
 
   return (
     <div className="grid" style={{ gap: 16 }}>
@@ -104,11 +109,34 @@ export function EmployeePanel({
           initialObs={entry?.obs || ""}
         />
       ) : (
-        (() => {
-          const todayBR = nowInPunchTZ().date;
-          const todayEntry = employee.entries.find((e) => e.date === todayBR) || null;
-          return <PunchClock entry={todayEntry} date={todayBR} schedule={sched} />;
-        })()
+        <>
+          <AlertEngine
+            name={employee.name}
+            date={todayBR}
+            dias={sched.dias}
+            sched={{
+              entrada: sched.entrada,
+              saidaAlmoco: sched.saidaAlmoco,
+              voltaAlmoco: sched.voltaAlmoco,
+              intInicio: sched.intInicio,
+              intFim: sched.intFim,
+              saida: sched.saida,
+            }}
+            entry={
+              todayEntry
+                ? {
+                    entrada: todayEntry.entrada,
+                    saidaAlmoco: todayEntry.saidaAlmoco,
+                    voltaAlmoco: todayEntry.voltaAlmoco,
+                    intInicio: todayEntry.intInicio,
+                    intFim: todayEntry.intFim,
+                    saida: todayEntry.saida,
+                  }
+                : null
+            }
+          />
+          <PunchClock entry={todayEntry} date={todayBR} schedule={sched} />
+        </>
       )}
 
       {/* Histórico */}
@@ -139,7 +167,7 @@ export function EmployeePanel({
               <div className="cols-3">
                 <div className="field">
                   <label>Data</label>
-                  <input name="data" type="date" defaultValue={today} />
+                  <input name="date" type="date" defaultValue={today} />
                 </div>
                 <div className="field">
                   <label>Pontos (use - para descontar)</label>
@@ -173,7 +201,7 @@ export function EmployeePanel({
                 </div>
                 <div className="field">
                   <label>Data</label>
-                  <input name="data" type="date" defaultValue={today} />
+                  <input name="date" type="date" defaultValue={today} />
                 </div>
                 <div className="field" style={{ gridColumn: "1 / -1" }}>
                   <label>Mensagem</label>

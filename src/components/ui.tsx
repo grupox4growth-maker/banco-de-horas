@@ -109,7 +109,7 @@ export function ProdList({
   userId,
   canManage,
 }: {
-  items: { id: string; data: string; pontos: number; nota: string | null }[];
+  items: { id: string; date: string; pontos: number; nota: string | null }[];
   userId: string;
   canManage: boolean;
 }) {
@@ -123,7 +123,7 @@ export function ProdList({
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600 }}>{it.nota || "(sem descrição)"}</div>
-            <div className="muted small">{brDate(it.data)}</div>
+            <div className="muted small">{brDate(it.date)}</div>
           </div>
           {canManage && (
             <form action={deleteProductivityAction}>
@@ -145,7 +145,7 @@ export function NotesList({
   userId,
   canManage,
 }: {
-  items: { id: string; data: string; tipo: string; texto: string; autor: string | null; lida: boolean }[];
+  items: { id: string; date: string; tipo: string; texto: string; autor: string | null; lida: boolean }[];
   userId: string;
   canManage: boolean;
 }) {
@@ -160,7 +160,7 @@ export function NotesList({
                 <span className="tag">{n.tipo === "aviso" ? "Aviso" : "Observação"}</span>
                 {!n.lida && <span className="pill warn" style={{ padding: "1px 7px" }}>novo</span>}
                 <span className="muted small">
-                  {brDate(n.data)} · {n.autor}
+                  {brDate(n.date)} · {n.autor}
                 </span>
               </div>
               <div style={{ marginTop: 5 }}>{n.texto}</div>

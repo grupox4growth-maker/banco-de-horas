@@ -14,6 +14,8 @@ type Emp = {
   saidaAlmoco: string | null;
   voltaAlmoco: string | null;
   saida: string | null;
+  intInicio: string | null;
+  intFim: string | null;
   cargaMin: number;
   descontarIntervalo: boolean;
   dias: number[];
@@ -80,6 +82,17 @@ export function EmployeeForm({ employee }: { employee: Emp }) {
           <input id="saida" name="saida" type="time" defaultValue={s.saida!} />
         </div>
       </div>
+      <div className="cols">
+        <div className="field">
+          <label htmlFor="intInicio">Início do intervalo (opcional)</label>
+          <input id="intInicio" name="intInicio" type="time" defaultValue={s.intInicio ?? ""} />
+        </div>
+        <div className="field">
+          <label htmlFor="intFim">Fim do intervalo (opcional)</label>
+          <input id="intFim" name="intFim" type="time" defaultValue={s.intFim ?? ""} />
+        </div>
+      </div>
+      <div className="muted small">Preencha o intervalo se quiser que o app avise a hora de sair e voltar do intervalo.</div>
       <div className="cols">
         <div className="field">
           <label htmlFor="cargaHoras">Carga diária (horas)</label>
