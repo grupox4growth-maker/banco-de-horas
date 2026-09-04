@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { VAPID_PUBLIC_KEY } from "@/lib/vapid";
+import { dueAlerts } from "@/lib/alerts";
 
 function urlB64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -218,34 +219,8 @@ export function AlertEngine({
     const tick = () => {
       const dow = new Date(date + "T12:00:00").getDay();
       if (Array.isArray(dias) && dias.length && !dias.includes(dow)) return;
-
       const now = brNowMin();
-      const done = (s: Seg) => !!(entry && entry[s]);
-      const entMin = toMin(entry?.entrada ?? null);
-      const schedEnt = toMin(sched.entrada);
-      const atraso = entMin != null && schedEnt != null && entMin > schedEnt ? entMin - schedEnt : 0;
-
-      for (const seg of SEG_ORDER) {
-        if (done(seg)) continue;
-        const base = toMin(sched[seg]);
-        if (base == null) continue; // sem horário definido (ex: intervalo não configurado)
-        const target = seg === "entrada" ? base : base + atraso; // atraso desloca os demais
-        const diff = target - now; // minutos até o alvo (negativo = atrasado)
-
-        if (diff <= 10 && diff > 5) {
-          fire(`${date}:${seg}:pre10`, `${firstName}, em 10 minutos você precisa ${LABEL[seg]}.`);
-        } else if (diff <= 5 && diff > 0) {
-          fire(`${date}:${seg}:pre5`, `${firstName}, faltam ${diff} min para ${LABEL[seg]}.`);
-        } else if (diff <= 0) {
-          const late = -diff;
-          const bucket = Math.floor(late / 5); // lembra a cada 5 min
-          if (late === 0) {
-            fire(`${date}:${seg}:now`, `${firstName}, está na hora de ${LABEL[seg]}!`);
-          } else {
-            fire(`${date}:${seg}:late${bucket}`, `${firstName}, você está atrasado ${late} min para ${LABEL[seg]}.`);
-          }
-        }
-      }
+      for (const a of dueAlerts(sched, entry, now, firstName, date)) fire(a.key, a.body);
     };
     tick();
     const id = setInterval(tick, 20000);

@@ -37,15 +37,25 @@ export function dueAlerts(
 ): DueAlert[] {
   const out: DueAlert[] = [];
   const done = (s: Seg) => !!(entry && entry[s]);
-  const entMin = toMin(entry?.entrada ?? null);
-  const schedEnt = toMin(sched.entrada);
-  const atraso = entMin != null && schedEnt != null && entMin > schedEnt ? entMin - schedEnt : 0;
+  const actual = (s: Seg) => toMin(entry ? entry[s] : null);
+  const planned = (s: Seg) => toMin(sched[s]);
+
+  // Alvos ENCADEADOS: cada bloco parte do horário REAL do bloco anterior (se batido),
+  // senão do alvo calculado. Assim, atraso na entrada desloca o almoço; e a volta do
+  // almoço conta a partir da hora que a pessoa realmente saiu + a duração prevista.
+  let lastPlanned: number | null = null;
+  let lastEffective = 0;
 
   for (const seg of SEG_ORDER) {
-    if (done(seg)) continue;
-    const base = toMin(sched[seg]);
-    if (base == null) continue;
-    const target = seg === "entrada" ? base : base + atraso;
+    const pl = planned(seg);
+    if (pl == null) continue; // bloco sem horário previsto (ex: intervalo não configurado)
+
+    const target = lastPlanned == null ? pl : lastEffective + (pl - lastPlanned);
+    lastPlanned = pl;
+    lastEffective = done(seg) ? actual(seg) ?? target : target;
+
+    if (done(seg)) continue; // já batido → não avisa
+
     const diff = target - nowMin;
     const label = ALERT_LABEL[seg];
 
