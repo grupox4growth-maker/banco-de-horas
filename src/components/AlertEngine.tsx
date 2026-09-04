@@ -80,27 +80,47 @@ export function AlertEngine({
     } catch {}
   }, [storeKey]);
 
-  const beep = useCallback(() => {
+  // cria/retoma o canal de áudio (o navegador exige um gesto do usuário para liberar o som)
+  const ensureAudio = useCallback((): AudioContext | null => {
     try {
-      const ctx = audioRef.current;
-      if (!ctx) return;
-      const play = (freq: number, start: number) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.connect(g);
-        g.connect(ctx.destination);
-        o.frequency.value = freq;
-        o.type = "sine";
-        g.gain.setValueAtTime(0.0001, ctx.currentTime + start);
-        g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + start + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + 0.35);
-        o.start(ctx.currentTime + start);
-        o.stop(ctx.currentTime + start + 0.36);
-      };
-      play(880, 0);
-      play(1174, 0.28);
-    } catch {}
+      if (!audioRef.current) {
+        const AC =
+          window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (!AC) return null;
+        audioRef.current = new AC();
+      }
+      if (audioRef.current.state === "suspended") audioRef.current.resume().catch(() => {});
+      return audioRef.current;
+    } catch {
+      return null;
+    }
   }, []);
+
+  const beep = useCallback(() => {
+    const ctx = ensureAudio();
+    if (!ctx) return;
+    const go = () => {
+      try {
+        const play = (freq: number, start: number) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.connect(g);
+          g.connect(ctx.destination);
+          o.frequency.value = freq;
+          o.type = "sine";
+          g.gain.setValueAtTime(0.0001, ctx.currentTime + start);
+          g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + start + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + 0.35);
+          o.start(ctx.currentTime + start);
+          o.stop(ctx.currentTime + start + 0.36);
+        };
+        play(880, 0);
+        play(1174, 0.28);
+      } catch {}
+    };
+    if (ctx.state === "suspended") ctx.resume().then(go).catch(() => {});
+    else go();
+  }, [ensureAudio]);
 
   const fire = useCallback(
     (key: string, msg: string) => {
@@ -119,11 +139,7 @@ export function AlertEngine({
   );
 
   const activate = useCallback(async () => {
-    try {
-      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      audioRef.current = new AC();
-      await audioRef.current.resume();
-    } catch {}
+    ensureAudio();
     try {
       if (typeof Notification !== "undefined") {
         const p = await Notification.requestPermission();
@@ -136,7 +152,19 @@ export function AlertEngine({
     } catch {}
     beep();
     setLastMsg(`Alertas ativados, ${firstName}! Vou te avisar nos horários.`);
-  }, [beep, firstName]);
+  }, [beep, firstName, ensureAudio]);
+
+  // Após recarregar/instalar, o áudio começa "travado" — religa no primeiro toque/clique.
+  useEffect(() => {
+    if (!activated) return;
+    const unlock = () => ensureAudio();
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, [activated, ensureAudio]);
 
   // motor de verificação
   useEffect(() => {
