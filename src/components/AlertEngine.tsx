@@ -262,12 +262,20 @@ export function AlertEngine({
         <button
           className="btn ghost sm"
           type="button"
-          onClick={() => {
+          onClick={async () => {
             beep();
             setLastMsg(`${firstName}, este é um teste de alerta. 🔔`);
             try {
-              if (typeof Notification !== "undefined" && Notification.permission === "granted")
+              if ("serviceWorker" in navigator && typeof Notification !== "undefined" && Notification.permission === "granted") {
+                const reg = await navigator.serviceWorker.ready;
+                await reg.showNotification("Ponto & Banco de Horas", {
+                  body: `${firstName}, teste de alerta 🔔`,
+                  icon: "/icon-192.png",
+                  badge: "/icon-192.png",
+                });
+              } else if (typeof Notification !== "undefined" && Notification.permission === "granted") {
                 new Notification("Ponto & Banco de Horas", { body: `${firstName}, teste de alerta 🔔` });
+              }
             } catch {}
           }}
         >
