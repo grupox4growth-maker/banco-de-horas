@@ -24,10 +24,56 @@ export async function GET(req: NextRequest) {
   const nowMin = toMin(time) ?? 0;
   const dow = dowOf(date);
 
+  const url = new URL(req.url);
+
   const users = await prisma.user.findMany({
     where: { role: "EMPLOYEE", active: true, pushSubs: { some: {} } },
     include: { pushSubs: true, entries: { where: { date } } },
   });
+
+  // ?test=1 → envia uma notificação de teste para todos os inscritos (ignora horário)
+  if (url.searchParams.get("test") === "1") {
+    const results: unknown[] = [];
+    for (const u of users) {
+      for (const sub of u.pushSubs) {
+        const r = await sendPush(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          { title: "Ponto & Banco de Horas", body: `${u.name.split(" ")[0]}, teste de notificação ✅`, tag: "teste" },
+        );
+        results.push({ user: u.name, result: r });
+        if (r === "gone") await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+      }
+    }
+    return NextResponse.json({ test: true, now: time, results });
+  }
+
+  // ?debug=1 → mostra o que o servidor calcula, sem enviar
+  if (url.searchParams.get("debug") === "1") {
+    const report = users.map((u) => {
+      const s = scheduleOf(u);
+      const e = u.entries[0];
+      const entry: AlertTimes | null = e
+        ? { entrada: e.entrada, saidaAlmoco: e.saidaAlmoco, voltaAlmoco: e.voltaAlmoco, intInicio: e.intInicio, intFim: e.intFim, saida: e.saida }
+        : null;
+      const workday = !(Array.isArray(u.dias) && u.dias.length && !u.dias.includes(dow));
+      const due = dueAlerts(
+        { entrada: s.entrada, saidaAlmoco: s.saidaAlmoco, voltaAlmoco: s.voltaAlmoco, intInicio: s.intInicio, intFim: s.intFim, saida: s.saida },
+        entry,
+        nowMin,
+        u.name.split(" ")[0],
+        date,
+      );
+      return {
+        nome: u.name,
+        subs: u.pushSubs.length,
+        diaDeTrabalho: workday,
+        jornada: { entrada: s.entrada, saidaAlmoco: s.saidaAlmoco, voltaAlmoco: s.voltaAlmoco, saida: s.saida },
+        pontoHoje: entry,
+        avisosDevidos: due.map((a) => a.key),
+      };
+    });
+    return NextResponse.json({ debug: true, now: time, nowMin, date, dow, report });
+  }
 
   let sent = 0;
 
