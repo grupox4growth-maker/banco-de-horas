@@ -19,9 +19,16 @@ type Emp = {
   cargaMin: number;
   descontarIntervalo: boolean;
   dias: number[];
+  routineId: string | null;
 };
 
-export function EmployeeForm({ employee }: { employee: Emp }) {
+export function EmployeeForm({
+  employee,
+  routines,
+}: {
+  employee: Emp;
+  routines: { id: string; name: string }[];
+}) {
   const s = scheduleOf(employee);
 
   return (
@@ -93,6 +100,19 @@ export function EmployeeForm({ employee }: { employee: Emp }) {
         </div>
       </div>
       <div className="muted small">Preencha o intervalo se quiser que o app avise a hora de sair e voltar do intervalo.</div>
+
+      <div className="field">
+        <label htmlFor="routineId">Rotina atribuída</label>
+        <select id="routineId" name="routineId" defaultValue={employee.routineId ?? ""}>
+          <option value="">— Nenhuma —</option>
+          {routines.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+        </select>
+        <div className="muted small">O checklist dessa rotina aparece para o funcionário marcar (cada item = 1 ponto).</div>
+      </div>
       <div className="cols">
         <div className="field">
           <label htmlFor="cargaHoras">Carga diária (horas)</label>

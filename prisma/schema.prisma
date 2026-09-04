@@ -16,6 +16,29 @@ enum Role {
   EMPLOYEE
 }
 
+// Rotina (biblioteca do gerente) — uma lista de blocos de trabalho.
+model Routine {
+  id        String   @id @default(cuid())
+  name      String
+  blocks    Json // [{ inicio, termino, titulo, pausa }]
+  createdAt DateTime @default(now())
+
+  users User[]
+}
+
+// Marcação de um bloco da rotina feita pelo funcionário (1 check = 1 ponto).
+model RoutineCheck {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String // "YYYY-MM-DD"
+  blockKey  String // horário de início do bloco (único por rotina)
+  checkedAt DateTime @default(now())
+
+  @@unique([userId, date, blockKey])
+  @@index([userId])
+}
+
 // Configuração única do sistema (id sempre = "app").
 model Setting {
   id               String   @id @default("app")
@@ -45,6 +68,9 @@ model User {
   descontarIntervalo Boolean @default(false)
   dias               Int[]   @default([1, 2, 3, 4, 5]) // dias da semana (0=Dom ... 6=Sáb)
 
+  routineId String?
+  routine   Routine? @relation(fields: [routineId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
 
   entries       TimeEntry[]
@@ -53,6 +79,7 @@ model User {
   resetTokens   PasswordResetToken[]
   pushSubs      PushSubscription[]
   sentAlerts    SentAlert[]
+  routineChecks RoutineCheck[]
 }
 
 // Inscrição de push (um por navegador/dispositivo do funcionário).

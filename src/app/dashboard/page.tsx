@@ -17,6 +17,7 @@ export default async function DashboardPage() {
       entries: true,
       productivity: true,
       notes: { where: { lida: false } },
+      _count: { select: { routineChecks: true } },
     },
     orderBy: { name: "asc" },
   });
@@ -27,7 +28,7 @@ export default async function DashboardPage() {
     const banco = bancoTotalMin(e.entries, sched);
     const today0 = e.entries.find((x) => x.date === today) || null;
     const saldoHoje = today0 ? computeDay(today0, sched).saldo : null;
-    const prodTotal = e.productivity.reduce((a, p) => a + p.pontos, 0);
+    const prodTotal = e.productivity.reduce((a, p) => a + p.pontos, 0) + e._count.routineChecks;
     return { e, sched, banco, today0, saldoHoje, prodTotal, avisos: e.notes.length };
   });
 

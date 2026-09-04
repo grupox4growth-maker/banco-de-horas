@@ -49,6 +49,7 @@ export async function updateEmployeeAction(_prev: FormState, f: FormData): Promi
   const email = String(f.get("email") || "").trim().toLowerCase() || null;
   const cargo = String(f.get("cargo") || "").trim() || null;
   const active = f.get("active") === "on";
+  const routineId = String(f.get("routineId") || "") || null;
   if (!id) return { error: "Funcionário inválido." };
   if (!name) return { error: "Informe o nome." };
 
@@ -56,7 +57,7 @@ export async function updateEmployeeAction(_prev: FormState, f: FormData): Promi
   try {
     await prisma.user.update({
       where: { id },
-      data: { name, email, cargo, active, ...sched },
+      data: { name, email, cargo, active, routineId, ...sched },
     });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {

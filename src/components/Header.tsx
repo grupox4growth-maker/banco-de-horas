@@ -42,6 +42,9 @@ export function Header({ session, active }: { session: Session; active?: string 
             <Link className={active === "produtividade" ? "active" : ""} href="/produtividade">
               Produtividade
             </Link>
+            <Link className={active === "rotinas" ? "active" : ""} href="/rotinas">
+              Rotinas
+            </Link>
           </nav>
         </div>
       )}

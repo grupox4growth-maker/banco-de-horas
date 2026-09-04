@@ -11,7 +11,10 @@ export const dynamic = "force-dynamic";
 
 export default async function EditEmployeePage({ params }: { params: { id: string } }) {
   const session = await requireManager();
-  const employee = await prisma.user.findUnique({ where: { id: params.id } });
+  const [employee, routines] = await Promise.all([
+    prisma.user.findUnique({ where: { id: params.id } }),
+    prisma.routine.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+  ]);
   if (!employee || employee.role !== "EMPLOYEE") notFound();
 
   return (
@@ -26,7 +29,7 @@ export default async function EditEmployeePage({ params }: { params: { id: strin
         <h2 style={{ fontSize: 20 }}>Editar funcionário</h2>
 
         <div className="card pad">
-          <EmployeeForm employee={employee} />
+          <EmployeeForm employee={employee} routines={routines} />
         </div>
 
         <div className="card pad grid" style={{ gap: 10 }}>

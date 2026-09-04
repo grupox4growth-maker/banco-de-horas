@@ -21,7 +21,8 @@ export async function middleware(req: NextRequest) {
   const isManagerArea =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/employees") ||
-    pathname.startsWith("/produtividade");
+    pathname.startsWith("/produtividade") ||
+    pathname.startsWith("/rotinas");
   const isEmployeeArea = pathname.startsWith("/me");
   const isProtected = isManagerArea || isEmployeeArea;
 
@@ -42,5 +43,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/employees/:path*", "/produtividade/:path*", "/me/:path*"],
+  matcher: ["/dashboard/:path*", "/employees/:path*", "/produtividade/:path*", "/rotinas/:path*", "/me/:path*"],
 };

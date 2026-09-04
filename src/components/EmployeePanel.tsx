@@ -2,6 +2,8 @@ import Link from "next/link";
 import { PunchEditor } from "@/components/PunchEditor";
 import { PunchClock } from "@/components/PunchClock";
 import { AlertEngine } from "@/components/AlertEngine";
+import { RoutineChecklist } from "@/components/RoutineChecklist";
+import { asBlocks } from "@/lib/routines";
 import { ActionForm } from "@/components/ActionForm";
 import { HistoryTable, ProdList, NotesList } from "@/components/ui";
 import { addProductivityAction } from "@/lib/actions/productivity";
@@ -36,6 +38,9 @@ type Emp = {
   entries: Entry[];
   productivity: { id: string; date: string; pontos: number; nota: string | null }[];
   notes: { id: string; date: string; tipo: string; texto: string; autor: string | null; lida: boolean }[];
+  routine: { name: string; blocks: unknown } | null;
+  routineChecks: { blockKey: string }[];
+  _count: { routineChecks: number };
 };
 
 export function EmployeePanel({
@@ -49,7 +54,7 @@ export function EmployeePanel({
 }) {
   const sched = scheduleOf(employee);
   const banco = bancoTotalMin(employee.entries, sched);
-  const prodTotal = employee.productivity.reduce((a, p) => a + p.pontos, 0);
+  const prodTotal = employee.productivity.reduce((a, p) => a + p.pontos, 0) + employee._count.routineChecks;
   const entry = employee.entries.find((e) => e.date === date) || null;
   const unread = employee.notes.filter((n) => !n.lida);
   const today = todayISO();
@@ -137,6 +142,16 @@ export function EmployeePanel({
           />
           <PunchClock entry={todayEntry} date={todayBR} schedule={sched} />
         </>
+      )}
+
+      {/* Checklist da rotina */}
+      {employee.routine && (
+        <RoutineChecklist
+          routineName={employee.routine.name}
+          blocks={asBlocks(employee.routine.blocks)}
+          checkedKeys={employee.routineChecks.map((c) => c.blockKey)}
+          canToggle={!canManage}
+        />
       )}
 
       {/* Histórico */}

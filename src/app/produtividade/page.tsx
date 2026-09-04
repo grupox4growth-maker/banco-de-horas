@@ -10,7 +10,7 @@ export default async function ProdutividadePage() {
   const session = await requireManager();
   const employees = await prisma.user.findMany({
     where: { role: "EMPLOYEE", active: true },
-    include: { productivity: true },
+    include: { productivity: true, routine: true, _count: { select: { routineChecks: true } } },
     orderBy: { name: "asc" },
   });
 
@@ -28,14 +28,15 @@ export default async function ProdutividadePage() {
                 <thead>
                   <tr>
                     <th>Funcionário</th>
-                    <th>Lançamentos</th>
+                    <th>Rotina</th>
+                    <th>Itens marcados</th>
                     <th>Pontos totais</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {employees.map((e) => {
-                    const total = e.productivity.reduce((a, p) => a + p.pontos, 0);
+                    const total = e.productivity.reduce((a, p) => a + p.pontos, 0) + e._count.routineChecks;
                     const cls = total > 0 ? "val-pos" : total < 0 ? "val-neg" : "val-zero";
                     return (
                       <tr key={e.id}>
@@ -45,7 +46,8 @@ export default async function ProdutividadePage() {
                             <span style={{ fontWeight: 700 }}>{e.name}</span>
                           </div>
                         </td>
-                        <td className="num">{e.productivity.length}</td>
+                        <td className="small muted">{e.routine ? e.routine.name : "—"}</td>
+                        <td className="num">{e._count.routineChecks}</td>
                         <td>
                           <span className={"num " + cls} style={{ fontWeight: 800 }}>
                             {(total > 0 ? "+" : "") + total} pts
@@ -65,7 +67,7 @@ export default async function ProdutividadePage() {
           </div>
         )}
         <div className="note">
-          Use pontos positivos para reconhecer bom desempenho e negativos para pontos de atenção. Cada funcionário acompanha o próprio total na área dele.
+          A produtividade vem do <strong>checklist da rotina</strong>: cada item que o funcionário marca vale 1 ponto. Crie e atribua rotinas em <Link href="/rotinas">Rotinas</Link>. Você ainda pode lançar pontos manuais (bônus/atenção) na ficha de cada funcionário.
         </div>
       </main>
     </>

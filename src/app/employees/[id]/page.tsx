@@ -4,7 +4,7 @@ import { requireManager } from "@/lib/guards";
 import { prisma } from "@/lib/prisma";
 import { Header } from "@/components/Header";
 import { EmployeePanel } from "@/components/EmployeePanel";
-import { todayISO } from "@/lib/time";
+import { todayISO, nowInPunchTZ } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +17,7 @@ export default async function EmployeeDetailPage({
 }) {
   const session = await requireManager();
   const date = searchParams.date && /^\d{4}-\d{2}-\d{2}$/.test(searchParams.date) ? searchParams.date : todayISO();
+  const today = nowInPunchTZ().date;
 
   const employee = await prisma.user.findUnique({
     where: { id: params.id },
@@ -24,6 +25,9 @@ export default async function EmployeeDetailPage({
       entries: { orderBy: { date: "desc" } },
       productivity: { orderBy: { date: "desc" } },
       notes: { orderBy: { createdAt: "desc" } },
+      routine: true,
+      routineChecks: { where: { date: today } },
+      _count: { select: { routineChecks: true } },
     },
   });
   if (!employee || employee.role !== "EMPLOYEE") notFound();
