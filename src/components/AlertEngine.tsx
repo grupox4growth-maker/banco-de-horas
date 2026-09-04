@@ -1,6 +1,34 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { VAPID_PUBLIC_KEY } from "@/lib/vapid";
+
+function urlB64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+async function subscribeToPush(): Promise<boolean> {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+  }
+  const res = await fetch("/api/push/subscribe", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(sub),
+  });
+  return res.ok;
+}
 
 type Times = {
   entrada: string | null;
@@ -57,6 +85,7 @@ export function AlertEngine({
 }) {
   const [activated, setActivated] = useState(false);
   const [notifOk, setNotifOk] = useState(false);
+  const [pushOk, setPushOk] = useState(false);
   const [lastMsg, setLastMsg] = useState<string>("");
   const fired = useRef<Set<string>>(new Set());
   const audioRef = useRef<AudioContext | null>(null);
@@ -140,12 +169,20 @@ export function AlertEngine({
 
   const activate = useCallback(async () => {
     ensureAudio();
+    let granted = false;
     try {
       if (typeof Notification !== "undefined") {
         const p = await Notification.requestPermission();
-        setNotifOk(p === "granted");
+        granted = p === "granted";
+        setNotifOk(granted);
       }
     } catch {}
+    if (granted) {
+      try {
+        const ok = await subscribeToPush();
+        setPushOk(ok);
+      } catch {}
+    }
     setActivated(true);
     try {
       localStorage.setItem("bh_alerts_on", "1");
@@ -153,6 +190,15 @@ export function AlertEngine({
     beep();
     setLastMsg(`Alertas ativados, ${firstName}! Vou te avisar nos horários.`);
   }, [beep, firstName, ensureAudio]);
+
+  // Ao reabrir com alertas já ativados, re-registra a inscrição de push (mantém atualizada).
+  useEffect(() => {
+    if (!activated) return;
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    subscribeToPush()
+      .then((ok) => setPushOk(ok))
+      .catch(() => {});
+  }, [activated]);
 
   // Após recarregar/instalar, o áudio começa "travado" — religa no primeiro toque/clique.
   useEffect(() => {
@@ -226,7 +272,13 @@ export function AlertEngine({
     <div className="card pad grid" style={{ gap: 8, borderLeft: "3px solid var(--pos)" }}>
       <div className="row wrapf" style={{ gap: 8 }}>
         <span style={{ fontWeight: 700 }}>🔔 Alertas ativados</span>
-        {!notifOk && (
+        {pushOk ? (
+          <span className="tag" style={{ color: "var(--pos)" }}>
+            avisa mesmo com o app fechado
+          </span>
+        ) : notifOk ? (
+          <span className="tag">só com o app aberto</span>
+        ) : (
           <span className="tag" style={{ color: "var(--warn)" }}>
             só com som (notificação bloqueada)
           </span>

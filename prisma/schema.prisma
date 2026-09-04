@@ -47,10 +47,37 @@ model User {
 
   createdAt DateTime @default(now())
 
-  entries      TimeEntry[]
-  productivity Productivity[]
-  notes        Note[]
-  resetTokens  PasswordResetToken[]
+  entries       TimeEntry[]
+  productivity  Productivity[]
+  notes         Note[]
+  resetTokens   PasswordResetToken[]
+  pushSubs      PushSubscription[]
+  sentAlerts    SentAlert[]
+}
+
+// Inscrição de push (um por navegador/dispositivo do funcionário).
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Registro de alertas já enviados (evita repetir o mesmo aviso).
+model SentAlert {
+  id     String   @id @default(cuid())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key    String // date:segmento:tipo
+  sentAt DateTime @default(now())
+
+  @@unique([userId, key])
+  @@index([sentAt])
 }
 
 model TimeEntry {
