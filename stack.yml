@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  banco-de-horas:
+    image: bancodehoras:latest
+    networks:
+      - x4growthnet
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      APP_URL: https://bancodehoras.grupox4growth.com
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      EMAIL_FROM: ${EMAIL_FROM}
+      VAPID_PRIVATE: ${VAPID_PRIVATE}
+      CRON_SECRET: ${CRON_SECRET}
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.bancodehoras.rule=Host(`bancodehoras.grupox4growth.com`)"
+        - "traefik.http.routers.bancodehoras.entrypoints=websecure"
+        - "traefik.http.routers.bancodehoras.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.bancodehoras.loadbalancer.server.port=3000"
+
+networks:
+  x4growthnet:
+    external: true

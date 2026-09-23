@@ -28,6 +28,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# docker / servidor (segredos reais do deploy)
+stack.env
+
 # typescript
 *.tsbuildinfo
 

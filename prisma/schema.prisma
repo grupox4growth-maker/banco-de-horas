@@ -3,12 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  // Nomes criados automaticamente pela integração Vercel Postgres (Neon):
-  //  - POSTGRES_PRISMA_URL  -> conexão com pooler, ajustada para o Prisma
-  //  - DATABASE_URL_UNPOOLED -> conexão direta (usada em migrações/db push)
-  url       = env("POSTGRES_PRISMA_URL")
-  directUrl = env("DATABASE_URL_UNPOOLED")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
