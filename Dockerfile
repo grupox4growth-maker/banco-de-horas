@@ -25,12 +25,12 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-c
   && rm -rf /var/lib/apt/lists/* \
   && useradd --system --uid 1001 nextjs
 ENV NODE_ENV=production
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.mjs ./next.config.mjs
+COPY --from=builder --chown=nextjs:nextjs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nextjs /app/.next ./.next
+COPY --from=builder --chown=nextjs:nextjs /app/public ./public
+COPY --from=builder --chown=nextjs:nextjs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nextjs /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nextjs /app/next.config.mjs ./next.config.mjs
 USER nextjs
 EXPOSE 3000
 CMD ["npx", "next", "start", "-p", "3000"]
